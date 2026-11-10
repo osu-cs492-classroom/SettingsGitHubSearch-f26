@@ -15,11 +15,14 @@ import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
+import androidx.navigation.fragment.findNavController
+import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import edu.oregonstate.cs492.settingsgithubsearch.R
 import edu.oregonstate.cs492.settingsgithubsearch.data.LoadingStatus
+import edu.oregonstate.cs492.settingsgithubsearch.util.buildGitHubQuery
 
 class GitHubSearchFragment : Fragment(R.layout.fragment_github_search) {
     private val viewModel: GitHubSearchViewModel by viewModels()
@@ -76,10 +79,24 @@ class GitHubSearchFragment : Fragment(R.layout.fragment_github_search) {
             }
         }
 
+        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         searchBtn.setOnClickListener {
             val query = searchBoxET.text.toString()
             if (!TextUtils.isEmpty(query)) {
-                viewModel.loadRepositorySearch(query)
+                val sort = prefs.getString(
+                    getString(R.string.pref_sort_key),
+                    null
+                )
+                val user = prefs.getString(
+                    getString(R.string.pref_user_key),
+                    null
+                )
+                val firstIssues = prefs.getInt(
+                    getString(R.string.pref_first_issues_key),
+                    0
+                )
+                val finalQuery = buildGitHubQuery(query, user, null, firstIssues)
+                viewModel.loadRepositorySearch(finalQuery, sort)
                 searchResultsListRV.scrollToPosition(0)
             }
         }
@@ -95,6 +112,8 @@ class GitHubSearchFragment : Fragment(R.layout.fragment_github_search) {
                     return when (menuItem.itemId) {
                         R.id.action_settings -> {
                             Log.d("GitHubSearchFragment", "Settings action selected")
+                            val directions = GitHubSearchFragmentDirections.navigateToSettings()
+                            findNavController().navigate(directions)
                             true
                         }
                         else -> false
